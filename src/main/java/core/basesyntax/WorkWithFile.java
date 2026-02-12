@@ -11,6 +11,8 @@ public class WorkWithFile {
     private static final String BUY = "buy";
     private static final String RESULT = "result";
     private static final String DELIMITER = ",";
+    private static final int SUPPLY_INDEX = 0;
+    private static final int BUY_INDEX = 1;
 
     public void getStatistic(String fromFileName, String toFileName) {
         validateArgs(fromFileName, toFileName);
@@ -26,35 +28,40 @@ public class WorkWithFile {
         }
     }
 
+    private void processLine(String line, int[] totals) {
+
+        if (line == null || line.isBlank()) {
+            return;
+        }
+        String[] parts = line.split(DELIMITER);
+        if (parts.length < 2) {
+            return;
+        }
+        String operation = parts[0].trim();
+        int amount = parseAmount(parts[1].trim());
+
+        if (operation.equals(SUPPLY)) {
+            totals[SUPPLY_INDEX] += amount;
+        } else if (operation.equals(BUY)) {
+            totals[BUY_INDEX] += amount;
+        }
+    }
+
     private int[] calculateTotals(String fileName) {
-        int totalSupply = 0;
-        int totalBuy = 0;
+        int[] totals = new int [] {0, 0};
 
         Path path = Path.of(fileName);
 
         try (BufferedReader reader = Files.newBufferedReader(path)) {
             String line;
             while ((line = reader.readLine()) != null) {
-                if (line.isBlank()) {
-                    continue;
-                }
-                String[] parts = line.split(DELIMITER);
-                if (parts.length < 2) {
-                    continue;
-                }
-                String operation = parts[0].trim();
-                int amount = parseAmount(parts[1].trim());
 
-                if (operation.equals(SUPPLY)) {
-                    totalSupply += amount;
-                } else if (operation.equals(BUY)) {
-                    totalBuy += amount;
-                }
+                processLine(line,totals);
             }
         } catch (IOException e) {
-            throw new RuntimeException("Can't read file:  " + fileName, e);
+            throw new RuntimeException("Can't read file: " + fileName, e);
         }
-        return new int[]{totalSupply, totalBuy};
+        return totals;
     }
 
     private int parseAmount(String value) {
